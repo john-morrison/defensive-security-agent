@@ -16,6 +16,7 @@ class RegexRule:
     rationale: str
     recommendation: str
     tags: tuple[str, ...]
+    extensions: tuple[str, ...] = ()
 
 
 BUILTIN_RULES: tuple[RegexRule, ...] = (
@@ -35,6 +36,7 @@ BUILTIN_RULES: tuple[RegexRule, ...] = (
             "separate from values."
         ),
         tags=("injection", "database"),
+        extensions=(".py", ".js", ".jsx", ".ts", ".tsx"),
     ),
     RegexRule(
         rule_id="dsa.shell.shell-true",
@@ -50,6 +52,7 @@ BUILTIN_RULES: tuple[RegexRule, ...] = (
             "arguments."
         ),
         tags=("command-injection", "process"),
+        extensions=(".py",),
     ),
     RegexRule(
         rule_id="dsa.crypto.md5-sha1",
@@ -96,6 +99,186 @@ BUILTIN_RULES: tuple[RegexRule, ...] = (
             "required, restrict it to trusted, authenticated data."
         ),
         tags=("deserialization", "python"),
+        extensions=(".py",),
+    ),
+    RegexRule(
+        rule_id="dsa.cpp.unsafe-string-copy",
+        title="Unsafe C/C++ string copy function",
+        severity="high",
+        pattern=re.compile(r"\b(strcpy|strcat|wcscpy|wcscat)\s*\("),
+        rationale=(
+            "Unbounded string copy and concatenation functions are common sources "
+            "of buffer overflows in C and C++ code."
+        ),
+        recommendation=(
+            "Use bounded APIs or project-approved safe string abstractions, and "
+            "validate destination buffer sizes."
+        ),
+        tags=("cpp", "memory-safety", "buffer-overflow"),
+        extensions=(".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"),
+    ),
+    RegexRule(
+        rule_id="dsa.cpp.unsafe-format",
+        title="Unsafe C/C++ formatted output function",
+        severity="high",
+        pattern=re.compile(r"\b(sprintf|vsprintf|swprintf|vswprintf)\s*\("),
+        rationale=(
+            "Unbounded formatted output can overflow destination buffers or create "
+            "format string risks when format values are not trusted."
+        ),
+        recommendation=(
+            "Use bounded formatting with explicit buffer sizes and keep format "
+            "strings constant."
+        ),
+        tags=("cpp", "memory-safety", "format-string"),
+        extensions=(".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"),
+    ),
+    RegexRule(
+        rule_id="dsa.cpp.raw-command-exec",
+        title="C/C++ command execution primitive",
+        severity="high",
+        pattern=re.compile(r"\b(system|popen|execl|execlp|execle|execv|execvp|execvpe)\s*\("),
+        rationale=(
+            "Command execution primitives can become command injection when any "
+            "argument is influenced by external input."
+        ),
+        recommendation=(
+            "Avoid shell invocation. Use a fixed executable with validated arguments "
+            "and a project-approved process wrapper."
+        ),
+        tags=("cpp", "command-injection", "process"),
+        extensions=(".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"),
+    ),
+    RegexRule(
+        rule_id="dsa.cpp.sql-concat",
+        title="Possible C++ SQL string construction",
+        severity="high",
+        pattern=re.compile(
+            r'(?i)(select|insert|update|delete)\b[^;\n]*(\+|append\s*\(|<<|strcat\s*\()'
+        ),
+        rationale=(
+            "SQL assembled through string concatenation can permit injection and "
+            "can bypass approved data-access patterns."
+        ),
+        recommendation=(
+            "Use bind variables, parameterized query APIs, or the approved Siebel "
+            "data-access abstraction."
+        ),
+        tags=("cpp", "injection", "database", "siebel"),
+        extensions=(".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"),
+    ),
+    RegexRule(
+        rule_id="dsa.cpp.raw-new-delete",
+        title="Raw C++ memory management",
+        severity="medium",
+        pattern=re.compile(r"\b(new\s+[\w:]+|delete\s+[\w*\[\]])"),
+        rationale=(
+            "Raw allocation and deletion increase the risk of leaks, double frees, "
+            "use-after-free defects, and exception-unsafe cleanup."
+        ),
+        recommendation=(
+            "Prefer RAII ownership types such as std::unique_ptr, std::shared_ptr, "
+            "standard containers, or project-approved lifetime wrappers."
+        ),
+        tags=("cpp", "memory-safety", "lifetime"),
+        extensions=(".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"),
+    ),
+    RegexRule(
+        rule_id="dsa.cpp.xml-external-entity-risk",
+        title="C++ XML parser external entity risk",
+        severity="medium",
+        pattern=re.compile(r"\b(load_file|LoadFile|ParseFile|parseFile|setValidationScheme)\s*\("),
+        rationale=(
+            "XML file parsing and validation features can expose XXE, SSRF, or local "
+            "file disclosure when external entities and network access are enabled."
+        ),
+        recommendation=(
+            "Disable external entity resolution and network fetches for untrusted XML. "
+            "Use hardened parser configuration by default."
+        ),
+        tags=("cpp", "xml", "xxe"),
+        extensions=(".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"),
+    ),
+    RegexRule(
+        rule_id="dsa.java.runtime-exec",
+        title="Java command execution primitive",
+        severity="high",
+        pattern=re.compile(r"\b(Runtime\.getRuntime\(\)\.exec|new\s+ProcessBuilder)\s*\("),
+        rationale=(
+            "Java process execution can become command injection when command or "
+            "argument values are influenced by external input."
+        ),
+        recommendation=(
+            "Avoid command execution on request-controlled data. Use fixed commands, "
+            "argument allowlists, and safer internal APIs where possible."
+        ),
+        tags=("java", "command-injection", "process"),
+        extensions=(".java",),
+    ),
+    RegexRule(
+        rule_id="dsa.java.sql-concat",
+        title="Possible Java SQL string construction",
+        severity="high",
+        pattern=re.compile(
+            r'(?i)(executeQuery|executeUpdate|prepareStatement|createStatement)\s*\([^;\n]*(\+|String\.format)'
+        ),
+        rationale=(
+            "SQL assembled from strings can permit injection when values are derived "
+            "from requests, integration payloads, or workflow inputs."
+        ),
+        recommendation=(
+            "Use PreparedStatement with bind variables and avoid concatenating SQL "
+            "fragments with untrusted values."
+        ),
+        tags=("java", "injection", "database"),
+        extensions=(".java",),
+    ),
+    RegexRule(
+        rule_id="dsa.java.unsafe-deserialization",
+        title="Java native deserialization",
+        severity="high",
+        pattern=re.compile(r"\bnew\s+ObjectInputStream\s*\("),
+        rationale=(
+            "Java native deserialization can execute gadget chains when reading "
+            "untrusted data."
+        ),
+        recommendation=(
+            "Avoid native Java deserialization for untrusted input. Use a safe data "
+            "format and enforce allowlists when legacy deserialization is unavoidable."
+        ),
+        tags=("java", "deserialization"),
+        extensions=(".java",),
+    ),
+    RegexRule(
+        rule_id="dsa.java.path-traversal-risk",
+        title="Java file path built from variable input",
+        severity="medium",
+        pattern=re.compile(r"\bnew\s+File\s*\([^;\n]*(\+|request|getParameter|getHeader)"),
+        rationale=(
+            "File paths built from external input can allow path traversal or access "
+            "outside the intended directory."
+        ),
+        recommendation=(
+            "Normalize the path, reject traversal sequences, and verify the resolved "
+            "path remains under an approved base directory."
+        ),
+        tags=("java", "path-traversal", "filesystem"),
+        extensions=(".java",),
+    ),
+    RegexRule(
+        rule_id="dsa.java.weak-xml-parser",
+        title="Java XML parser created without visible hardening",
+        severity="medium",
+        pattern=re.compile(r"\b(DocumentBuilderFactory|SAXParserFactory|XMLInputFactory)\.newInstance\s*\("),
+        rationale=(
+            "Default XML parser settings may allow external entities or network "
+            "fetches unless hardened features are explicitly disabled."
+        ),
+        recommendation=(
+            "Disable DOCTYPE declarations, external entities, and external DTD/schema "
+            "loading before parsing untrusted XML."
+        ),
+        tags=("java", "xml", "xxe"),
+        extensions=(".java",),
     ),
 )
-

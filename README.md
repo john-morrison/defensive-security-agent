@@ -28,6 +28,13 @@ For this repository's sample app:
 dsa scan --target examples/insecure_service --output security-report.md
 ```
 
+For the Siebel-oriented C++ and Java examples:
+
+```bash
+dsa scan --target examples/insecure_siebel_cpp --output cpp-security-report.md
+dsa scan --target examples/insecure_siebel_java --output java-security-report.md
+```
+
 Run tests:
 
 ```bash
@@ -47,11 +54,27 @@ The agent is organized around a small pipeline:
 Future work should add:
 
 - model-backed hypothesis generation
+- C++ AST and call graph analysis with Clang tooling
+- Java source-to-sink analysis
 - CodeQL and SBOM adapters
 - repository ownership and service metadata
 - CI integration
 - issue creation workflow
 - sandboxed test and fuzz harnesses
+
+## Siebel-Oriented Track
+
+The current MVP includes first-pass C++ and Java rules for bug classes that matter in a Siebel-heavy codebase:
+
+- unsafe C/C++ string and formatted output APIs
+- C/C++ command execution
+- C++ SQL string assembly
+- raw C++ ownership/lifetime patterns
+- Java command execution
+- Java SQL string assembly
+- Java native deserialization
+- Java path traversal risk
+- XML parser hardening gaps
 
 ## Safety Model
 

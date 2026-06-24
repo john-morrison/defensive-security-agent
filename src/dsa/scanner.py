@@ -13,7 +13,12 @@ SOURCE_EXTENSIONS = {
     ".cc",
     ".cpp",
     ".cs",
+    ".cxx",
     ".go",
+    ".h",
+    ".hh",
+    ".hpp",
+    ".hxx",
     ".java",
     ".js",
     ".jsx",
@@ -132,6 +137,8 @@ def _scan_file(path: Path) -> list[Finding]:
         if not stripped or stripped.startswith(("#", "//")):
             continue
         for rule in BUILTIN_RULES:
+            if rule.extensions and path.suffix.lower() not in rule.extensions:
+                continue
             if rule.pattern.search(stripped):
                 findings.append(
                     Finding(
@@ -214,4 +221,3 @@ def _normalize_semgrep_severity(value: object) -> str:
     if text == "info":
         return "low"
     return "medium"
-
