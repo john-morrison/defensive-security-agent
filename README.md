@@ -35,6 +35,12 @@ dsa scan --target examples/insecure_siebel_cpp --output cpp-security-report.md
 dsa scan --target examples/insecure_siebel_java --output java-security-report.md
 ```
 
+Verify Java REST source-to-sink traces:
+
+```bash
+dsa triage --kind java-rest --target examples/java_rest_verification --output java-rest-verification-report.md
+```
+
 Run tests:
 
 ```bash
@@ -75,6 +81,23 @@ The current MVP includes first-pass C++ and Java rules for bug classes that matt
 - Java native deserialization
 - Java path traversal risk
 - XML parser hardening gaps
+
+## Verification Workflows
+
+The `triage` command adds evidence-oriented analysis on top of scan findings. The first supported workflow is `java-rest`, which looks for REST-controlled Java input reaching command execution, file path construction, SQL execution, native deserialization, or XML parsing.
+
+Trace statuses:
+
+- `verified`: REST-controlled data reaches a sink and no basic guard evidence was found.
+- `probable`: REST-controlled data reaches a sink, but guard or hardening evidence needs human review.
+
+Example:
+
+```bash
+dsa triage --kind java-rest \
+  --target /path/to/java/rest/module \
+  --output verification-report.md
+```
 
 ## Safety Model
 

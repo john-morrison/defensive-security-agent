@@ -10,3 +10,5 @@ build/
 *.egg-info/
 security-report.md
 *-security-report.md
+verification-report.md
+*-verification-report.md
