@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import json
-import shutil
-import subprocess
 from pathlib import Path
 
+from .external_scanners import run_external_scanners
 from .findings import SEVERITY_ORDER, Finding, ScanResult
 from .rules import BUILTIN_RULES
 
@@ -51,7 +49,12 @@ IGNORED_DIRS = {
 }
 
 
-def scan_target(target: Path, include_semgrep: bool, max_file_kb: int) -> ScanResult:
+def scan_target(
+    target: Path,
+    include_semgrep: bool,
+    max_file_kb: int,
+    external_scanners: tuple[str, ...] = (),
+) -> ScanResult:
     if not target.exists():
         raise FileNotFoundError(f"target does not exist: {target}")
 
@@ -63,10 +66,16 @@ def scan_target(target: Path, include_semgrep: bool, max_file_kb: int) -> ScanRe
     for path in files:
         findings.extend(_scan_file(path))
 
-    if include_semgrep:
-        semgrep_findings, semgrep_notes = _run_semgrep(target)
-        findings.extend(semgrep_findings)
-        notes.extend(semgrep_notes)
+    requested_scanners = list(external_scanners)
+    if include_semgrep and "semgrep" not in requested_scanners:
+        requested_scanners.append("semgrep")
+    if requested_scanners:
+        external_findings, external_notes = run_external_scanners(
+            target,
+            tuple(dict.fromkeys(requested_scanners)),
+        )
+        findings.extend(external_findings)
+        notes.extend(external_notes)
 
     ordered = tuple(
         sorted(
@@ -154,70 +163,3 @@ def _scan_file(path: Path) -> list[Finding]:
                     )
                 )
     return findings
-
-
-def _run_semgrep(target: Path) -> tuple[list[Finding], list[str]]:
-    if shutil.which("semgrep") is None:
-        return [], ["Semgrep was requested but the semgrep CLI was not found."]
-
-    command = [
-        "semgrep",
-        "scan",
-        "--config",
-        "auto",
-        "--json",
-        "--quiet",
-        str(target),
-    ]
-    try:
-        completed = subprocess.run(
-            command,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
-    except subprocess.TimeoutExpired:
-        return [], ["Semgrep timed out after 300 seconds."]
-
-    notes: list[str] = []
-    if completed.stderr.strip():
-        notes.append(f"Semgrep stderr: {completed.stderr.strip()[:500]}")
-
-    try:
-        payload = json.loads(completed.stdout or "{}")
-    except json.JSONDecodeError:
-        return [], notes + ["Semgrep returned non-JSON output."]
-
-    findings: list[Finding] = []
-    for result in payload.get("results", []):
-        extra = result.get("extra", {})
-        start = result.get("start", {})
-        metadata = extra.get("metadata", {})
-        severity = _normalize_semgrep_severity(extra.get("severity"))
-        findings.append(
-            Finding(
-                rule_id=str(result.get("check_id", "semgrep.unknown")),
-                title=str(extra.get("message", "Semgrep finding")),
-                severity=severity,
-                path=Path(str(result.get("path", target))),
-                line=int(start.get("line", 1)),
-                evidence=str(extra.get("lines", "")).strip()[:240],
-                rationale="Semgrep reported this issue from its selected ruleset.",
-                recommendation=str(metadata.get("fix", "Review and remediate this finding.")),
-                source="semgrep",
-                tags=("semgrep",),
-            )
-        )
-    return findings, notes
-
-
-def _normalize_semgrep_severity(value: object) -> str:
-    text = str(value or "").lower()
-    if text in {"error", "critical"}:
-        return "critical"
-    if text == "warning":
-        return "high"
-    if text == "info":
-        return "low"
-    return "medium"

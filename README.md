@@ -9,6 +9,12 @@ New to this tool? Start with the beginner walkthrough:
 docs/beginner-guide.md
 ```
 
+To install optional scanners and understand how to run them:
+
+```bash
+docs/scanner-tools.md
+```
+
 The project is organized around the two-part workflow:
 
 1. **Repository scanner**: scan a local Siebel or general-purpose repository and
@@ -46,6 +52,28 @@ Write the Part 1 machine-readable artifact:
 ```bash
 dsa scan \
   --target /path/to/repo \
+  --output security-report.md \
+  --json-output security-findings.json
+```
+
+Run selected external scanners when installed:
+
+```bash
+dsa scan \
+  --target /path/to/repo \
+  --external-scanner semgrep \
+  --external-scanner gitleaks \
+  --external-scanner osv-scanner \
+  --output security-report.md \
+  --json-output security-findings.json
+```
+
+Run all supported external scanners that are installed:
+
+```bash
+dsa scan \
+  --target /path/to/repo \
+  --include-all-external-scanners \
   --output security-report.md \
   --json-output security-findings.json
 ```

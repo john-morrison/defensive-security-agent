@@ -136,6 +136,40 @@ findings.
 The JSON file is for the next step. Do not edit it unless you know what you are
 doing.
 
+## Recommended Optional Scanner Setup
+
+DSA has built-in rules, so the basic scan works immediately. For stronger
+coverage, install optional free/open-source scanners such as Semgrep, Gitleaks,
+OSV-Scanner, Grype, Bandit, Checkov, and others.
+
+The full prerequisite and install guide is here:
+
+```bash
+docs/scanner-tools.md
+```
+
+After installing optional tools, run selected scanners like this:
+
+```bash
+dsa scan \
+  --target /Users/johnm/codex_general/my_projects/siebel-monorepo \
+  --external-scanner semgrep \
+  --external-scanner gitleaks \
+  --external-scanner osv-scanner \
+  --output siebel-security-report.md \
+  --json-output siebel-security-findings.json
+```
+
+To run every supported external scanner that is installed:
+
+```bash
+dsa scan \
+  --target /Users/johnm/codex_general/my_projects/siebel-monorepo \
+  --include-all-external-scanners \
+  --output siebel-all-tools-report.md \
+  --json-output siebel-all-tools-findings.json
+```
+
 ## What The Scan Report Contains
 
 Each finding includes:

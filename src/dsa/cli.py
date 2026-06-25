@@ -8,6 +8,7 @@ from .artifacts import (
     verification_result_to_artifact,
     write_artifact,
 )
+from .external_scanners import SUPPORTED_SCANNERS
 from .java_rest_verifier import verify_java_rest_target
 from .report import render_markdown
 from .scanner import scan_target
@@ -37,7 +38,19 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument(
         "--include-semgrep",
         action="store_true",
-        help="run Semgrep when the semgrep CLI is available",
+        help="run Semgrep when the semgrep CLI is available; equivalent to --external-scanner semgrep",
+    )
+    scan.add_argument(
+        "--external-scanner",
+        action="append",
+        choices=sorted(SUPPORTED_SCANNERS),
+        default=[],
+        help="optional external scanner to run; repeat for multiple tools",
+    )
+    scan.add_argument(
+        "--include-all-external-scanners",
+        action="store_true",
+        help="run every supported external scanner that is installed",
     )
     scan.add_argument(
         "--max-file-kb",
@@ -149,6 +162,7 @@ def main(argv: list[str] | None = None) -> int:
             target=target,
             include_semgrep=args.include_semgrep,
             max_file_kb=args.max_file_kb,
+            external_scanners=_selected_external_scanners(args),
         )
         output.write_text(render_markdown(result), encoding="utf-8")
         if args.json_output:
@@ -209,3 +223,10 @@ def main(argv: list[str] | None = None) -> int:
 
     parser.error(f"unknown command: {args.command}")
     return 2
+
+
+def _selected_external_scanners(args: argparse.Namespace) -> tuple[str, ...]:
+    scanners = list(args.external_scanner or [])
+    if args.include_all_external_scanners:
+        scanners.extend(sorted(SUPPORTED_SCANNERS))
+    return tuple(dict.fromkeys(scanners))
