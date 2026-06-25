@@ -2,6 +2,35 @@
 
 These test cases demonstrate the verified SAMRESTServices command-injection traces using harmless marker-file payloads. Run them only against an authorized dev or test instance.
 
+Preferred integrated workflow:
+
+```bash
+dsa triage \
+  --kind java-rest \
+  --target /path/to/SAMRESTServices \
+  --output sam-rest-verification-report.md \
+  --json-output sam-rest-verification-findings.json
+
+dsa validate \
+  --findings sam-rest-verification-findings.json \
+  --base-url http://HOST:PORT/bugdb \
+  --profile siebel-sam-rest \
+  --output sam-rest-validation-report.md
+```
+
+To execute safe validation requests:
+
+```bash
+dsa validate \
+  --findings sam-rest-verification-findings.json \
+  --base-url http://HOST:PORT/bugdb \
+  --profile siebel-sam-rest \
+  --execute \
+  --i-understand-authorized-test \
+  --allow-host HOST \
+  --output sam-rest-execution-report.md
+```
+
 The PoC runner is dry-run by default:
 
 ```bash
@@ -44,4 +73,3 @@ For each bug, include:
 - generated curl command from the PoC runner
 - server-side marker-file verification output
 - expected fix: replace `Runtime.exec(String)` and `cmd /c` with fixed executable plus argument array, and reject or allowlist request-controlled values before process execution
-

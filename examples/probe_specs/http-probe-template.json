@@ -1,0 +1,86 @@
+{
+  "profile": "dsa.http-probe.v1",
+  "description": "Template for reviewed, non-destructive sandbox HTTP validation probes.",
+  "cases": [
+    {
+      "case_id": "input.injection-sweep",
+      "title": "Input handling injection sweep",
+      "category": "input-validation",
+      "severity": "high",
+      "safe_mode": "controlled-aggressive-http-probe",
+      "match": {
+        "tags_any": ["injection", "database"]
+      },
+      "request": {
+        "method": "GET",
+        "path": "/replace/with/sandbox/search",
+        "query": {
+          "q": "DSA_BASELINE"
+        }
+      },
+      "mutations": [
+        {
+          "location": "query",
+          "name": "q",
+          "payload_set": "sqli-basic"
+        },
+        {
+          "location": "query",
+          "name": "q",
+          "payload_set": "xss-reflection"
+        }
+      ],
+      "expected": {
+        "status_codes": [200, 400, 500],
+        "body_contains_any": ["DSA_PROBE", "SQL", "syntax", "Exception", "Traceback"]
+      },
+      "manual_verification": "Compare baseline and mutated responses. File a bug if mutation changes authorization scope, exposes SQL/framework errors, reflects executable content, or shows evidence of unsafe query construction.",
+      "notes": "Replace the path with a sandbox endpoint that is approved for input validation testing."
+    },
+    {
+      "case_id": "debug.stacktrace",
+      "title": "Debug or stack-trace exposure probe",
+      "category": "debug-exposure",
+      "severity": "medium",
+      "safe_mode": "non-destructive-http-probe",
+      "match": {
+        "rule_ids": ["dsa.web.debug-mode"]
+      },
+      "request": {
+        "method": "GET",
+        "path": "/replace/with/sandbox/route",
+        "query": {
+          "trigger": "safe-error"
+        }
+      },
+      "expected": {
+        "status_codes": [500],
+        "body_contains_any": ["Traceback", "Exception", "Debug"]
+      },
+      "manual_verification": "Confirm whether the response or server logs expose a stack trace, framework debugger, environment detail, or sensitive implementation detail.",
+      "notes": "Replace the path with a sandbox-only route that is approved for error-handling validation."
+    },
+    {
+      "case_id": "authz.cross-record-read",
+      "title": "Authorization boundary probe for cross-record access",
+      "category": "authorization",
+      "severity": "high",
+      "safe_mode": "read-only-http-probe",
+      "match": {
+        "tags_any": ["authorization", "access-control", "siebel"]
+      },
+      "request": {
+        "method": "GET",
+        "path": "/replace/with/sandbox/api/record",
+        "query": {
+          "recordId": "APPROVED_SANDBOX_RECORD_ID"
+        }
+      },
+      "expected": {
+        "status_codes": [401, 403, 404]
+      },
+      "manual_verification": "Run with a sandbox user who must not access the record. File a bug if the response exposes record data or confirms unauthorized access.",
+      "notes": "Use only synthetic sandbox records and accounts created for authorization testing."
+    }
+  ]
+}
