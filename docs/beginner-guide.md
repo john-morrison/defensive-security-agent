@@ -112,6 +112,29 @@ If `dsa` is not found, use:
 PYTHONPATH=src python3 -m dsa --help
 ```
 
+## Use The Browser UI
+
+QA engineers can use the local browser UI instead of typing scan and validation
+commands.
+
+Start it with:
+
+```bash
+dsa ui
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8765
+```
+
+The UI guide is here:
+
+```bash
+docs/qa-ui-guide.md
+```
+
 ## Part 1: Scan A Repository
 
 Use `scan` to inspect a local source tree.

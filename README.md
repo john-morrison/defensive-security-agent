@@ -15,6 +15,12 @@ To install optional scanners and understand how to run them:
 docs/scanner-tools.md
 ```
 
+For the local browser UI:
+
+```bash
+docs/qa-ui-guide.md
+```
+
 The project is organized around the two-part workflow:
 
 1. **Repository scanner**: scan a local Siebel or general-purpose repository and
@@ -45,6 +51,12 @@ python3 -m pip install -e .
 
 ```bash
 dsa scan --target /path/to/repo --output security-report.md
+```
+
+Start the local browser UI:
+
+```bash
+dsa ui
 ```
 
 Write the Part 1 machine-readable artifact:

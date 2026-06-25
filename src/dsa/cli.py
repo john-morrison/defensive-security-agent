@@ -13,6 +13,7 @@ from .java_rest_verifier import verify_java_rest_target
 from .report import render_markdown
 from .scanner import scan_target
 from .triage_report import render_verification_markdown
+from .ui import serve_ui
 from .validation import validate_artifact, write_validation_json
 from .validation_report import render_validation_markdown
 
@@ -148,6 +149,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     validate.add_argument("--timeout", type=int, default=20, help="HTTP timeout in seconds")
 
+    ui = subparsers.add_parser(
+        "ui",
+        help="start the local browser UI",
+    )
+    ui.add_argument("--host", default="127.0.0.1", help="host interface to bind")
+    ui.add_argument("--port", type=int, default=8765, help="port to listen on")
+    ui.add_argument(
+        "--output-dir",
+        help="directory where UI-generated reports are written",
+    )
+    ui.add_argument(
+        "--open-browser",
+        action="store_true",
+        help="open the UI in the default browser",
+    )
+
     return parser
 
 
@@ -219,6 +236,15 @@ def main(argv: list[str] | None = None) -> int:
         if args.json_output:
             print(f"Wrote {Path(args.json_output).resolve()}")
         print(f"Generated {len(result.cases)} validation case(s)")
+        return 0
+
+    if args.command == "ui":
+        serve_ui(
+            host=args.host,
+            port=args.port,
+            output_dir=Path(args.output_dir).resolve() if args.output_dir else None,
+            open_browser=args.open_browser,
+        )
         return 0
 
     parser.error(f"unknown command: {args.command}")
